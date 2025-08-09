@@ -1,0 +1,8 @@
+\
+#!/bin/sh /etc/rc.common
+START=19
+
+start() {
+  local dir="$(uci -q get remote_controller.main.storage_dir || echo /var/lib/remote-controller)"
+  mkdir -p "$dir/devices"
+}

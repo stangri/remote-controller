@@ -1,0 +1,39 @@
+\
+#!/bin/sh
+# /www/cgi-bin/remote-controller/enroll
+# Reads device bootstrap JSON from stdin, stores it, and responds with a new password.
+
+STORAGE_DIR="$(uci -q get remote_controller.main.storage_dir || echo /var/lib/remote-controller)"
+PW_LEN="$(uci -q get remote_controller.main.default_new_password_length || echo 20)"
+mkdir -p "$STORAGE_DIR/devices"
+
+BODY="$(cat)"
+
+MAC="$(jsonfilter -s "$BODY" -e '@.mac' 2>/dev/null)"
+HOST="$(jsonfilter -s "$BODY" -e '@.hostname' 2>/dev/null)"
+IP="$(jsonfilter -s "$BODY" -e '@.ip' 2>/dev/null)"
+USER="$(jsonfilter -s "$BODY" -e '@.username' 2>/dev/null)"
+PASS="$(jsonfilter -s "$BODY" -e '@.password' 2>/dev/null)"
+UBUS_PATH="$(jsonfilter -s "$BODY" -e '@.ubus_path' 2>/dev/null)"
+[ -z "$UBUS_PATH" ] && UBUS_PATH="/ubus"
+[ -z "$IP" ] && IP="$REMOTE_ADDR"
+
+NEWPASS="$(dd if=/dev/urandom bs=24 count=1 2>/dev/null | base64 | tr -d '\n=/' | cut -c1-$PW_LEN)"
+
+REC="$STORAGE_DIR/devices/${MAC:-unknown}.json"
+{
+  echo '{'
+  printf '"ts": %d,' "$(date +%s)"
+  printf '"host":"%s",' "$HOST"
+  printf '"ip":"%s",' "$IP"
+  printf '"mac":"%s",' "$MAC"
+  printf '"username":"%s",' "$USER"
+  printf '"password":"%s",' "$PASS"
+  printf '"ubus":"http://%s%s"' "$IP" "$UBUS_PATH"
+  echo '}'
+} > "$REC"
+
+echo "Status: 200 OK"
+echo "Content-Type: application/json"
+echo ""
+printf '{ "ok": true, "new_password": "%s" }' "$NEWPASS"
