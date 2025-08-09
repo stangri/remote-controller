@@ -1,8 +1,11 @@
-\
 #!/bin/sh /etc/rc.common
+
+# shellcheck disable=SC2034
 START=19
 
 start() {
-  local dir="$(uci -q get remote_controller.main.storage_dir || echo /var/lib/remote-controller)"
+# shellcheck disable=SC3043
+  local dir
+  dir="$(uci -q get remote-controller.main.storage_dir || echo /var/lib/remote-controller)"
   mkdir -p "$dir/devices"
 }

@@ -1,0 +1,4 @@
+config remote-controller 'main'
+	option listen '0.0.0.0:80'
+	option storage_dir '/var/lib/remote-controller'
+	option default_new_password_length '20'
